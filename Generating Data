@@ -1,0 +1,67 @@
+import nltk
+import random
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+
+# Download NLTK resources if not already downloaded
+nltk.download('punkt')
+nltk.download('stopwords')
+
+# Generate synthetic dataset
+def generate_synthetic_dataset():
+    suitable_resumes = [
+        "Experienced data analyst with strong skills in Python and data analysis.",
+        "Machine learning enthusiast with experience in Python programming.",
+        "Data scientist with expertise in machine learning algorithms.",
+        "Python developer with experience in web scraping and data analysis."
+    ]
+
+    unsuitable_resumes = [
+        "Web developer with proficiency in JavaScript and PHP.",
+        "Marketing specialist with experience in social media management.",
+        "Sales representative with excellent communication skills.",
+        "Graphic designer with a strong portfolio of creative designs."
+    ]
+
+    # Assign labels to the resumes: 1 for suitable and 0 for unsuitable
+    labeled_resumes = [(resume, 1) for resume in suitable_resumes] + [(resume, 0) for resume in unsuitable_resumes]
+    random.shuffle(labeled_resumes)
+    return labeled_resumes
+
+# Preprocess the text: tokenization, lowercase, remove stopwords
+def preprocess_text(text):
+    stop_words = set(stopwords.words('english'))
+    words = word_tokenize(text.lower())
+    return " ".join([word for word in words if word.isalnum() and word not in stop_words])
+
+# Generate the dataset
+labeled_resumes = generate_synthetic_dataset()
+resumes, labels = zip(*labeled_resumes)
+
+# Preprocess the resumes
+preprocessed_resumes = [preprocess_text(resume) for resume in resumes]
+
+# Split the dataset into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(preprocessed_resumes, labels, test_size=0.2, random_state=42)
+
+# Vectorize the resumes using TF-IDF representation
+vectorizer = TfidfVectorizer()
+X_train_vectorized = vectorizer.fit_transform(X_train)
+X_test_vectorized = vectorizer.transform(X_test)
+
+# Train a Naive Bayes classifier
+classifier = MultinomialNB()
+classifier.fit(X_train_vectorized, y_train)
+
+# Make predictions on the test set
+y_pred = classifier.predict(X_test_vectorized)
+
+# Evaluate the model
+accuracy = accuracy_score(y_test, y_pred)
+print("Accuracy:", accuracy)
+print("\nClassification Report:\n", classification_report(y_test, y_pred))
+print("\nConfusion Matrix:\n", confusion_matrix(y_test, y_pred))
